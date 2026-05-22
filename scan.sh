@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ═══════════════════════════════════════════════════
-# RiskwareSupplyChain GitHub Action — Dependency  Scanner
+# RiskwareSupplyChain GitHub Action — Dependency Scanner
 # ═══════════════════════════════════════════════════
 
 API_URL="${RSC_API_URL:-https://riskware-supply-chain-production.up.railway.app}"
@@ -58,12 +58,15 @@ for manifest in "${MANIFESTS[@]}"; do
 
   CONTENT=$(cat "$manifest")
 
+  # Build a descriptive filename for scan history: github-action:owner/repo:path/to/manifest
+  ACTION_FILENAME="github-action:${GITHUB_REPOSITORY:-unknown}:${manifest#./}"
+
   # POST to the paste endpoint — it auto-detects format.
   RESPONSE=$(curl -s -w "\n%{http_code}" \
     -X POST "${API_URL}/api/v1/scan/paste" \
     -H "Authorization: ApiKey ${API_KEY}" \
     -H "Content-Type: application/json" \
-    -d "$(jq -n --arg text "$CONTENT" '{ text: $text }')")
+    -d "$(jq -n --arg text "$CONTENT" --arg fn "$ACTION_FILENAME" '{ text: $text, filename: $fn }')")
 
   HTTP_CODE=$(echo "$RESPONSE" | tail -1)
   BODY=$(echo "$RESPONSE" | sed '$d')

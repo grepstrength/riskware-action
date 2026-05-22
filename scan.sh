@@ -74,16 +74,17 @@ for manifest in "${MANIFESTS[@]}"; do
     continue
   fi
 
-  # Parse results.
+  # Parse results — API returns { "results": [...], ... }
   RESULTS=$(echo "$BODY" | jq -r '.results // []')
   PKG_COUNT=$(echo "$RESULTS" | jq 'length')
   TOTAL_PACKAGES=$((TOTAL_PACKAGES + PKG_COUNT))
 
   # Count vulnerabilities by severity.
-  CRIT=$(echo "$RESULTS" | jq '[.[] | select(.risk == "CRITICAL")] | length')
-  HIGH=$(echo "$RESULTS" | jq '[.[] | select(.risk == "HIGH")] | length')
-  MED=$(echo "$RESULTS" | jq '[.[] | select(.risk == "MEDIUM")] | length')
-  LOW=$(echo "$RESULTS" | jq '[.[] | select(.risk == "LOW")] | length')
+  # API field: .risk_score with lowercase values: "critical", "high", "medium", "low"
+  CRIT=$(echo "$RESULTS" | jq '[.[] | select(.risk_score == "critical")] | length')
+  HIGH=$(echo "$RESULTS" | jq '[.[] | select(.risk_score == "high")] | length')
+  MED=$(echo "$RESULTS" | jq '[.[] | select(.risk_score == "medium")] | length')
+  LOW=$(echo "$RESULTS" | jq '[.[] | select(.risk_score == "low")] | length')
 
   TOTAL_CRITICAL=$((TOTAL_CRITICAL + CRIT))
   TOTAL_HIGH=$((TOTAL_HIGH + HIGH))
@@ -95,9 +96,10 @@ for manifest in "${MANIFESTS[@]}"; do
   # Build per-manifest results for the comment.
   if [ "$PKG_COUNT" -gt 0 ]; then
     # Extract vulnerable packages (those with CVEs).
+    # API fields: .package_name, .declared_version, .vulnerabilities[], .risk_score
     VULN_ROWS=$(echo "$RESULTS" | jq -r '
-      .[] | select(.cves != null and (.cves | length) > 0) |
-      "| `\(.package)` | \(.version) | \(.cves | length) CVE(s) | \(.risk) | \(.remediation // "—") |"
+      .[] | select(.vulnerabilities != null and (.vulnerabilities | length) > 0) |
+      "| `\(.package_name)` | \(.declared_version) | \(.vulnerabilities | length) CVE(s) | \(.risk_score | ascii_upcase) | \([ .vulnerabilities[] | select(.fixed != null and .fixed != "") | .fixed ] | unique | join(", ") | if . == "" then "—" else . end) |"
     ')
 
     if [ -n "$VULN_ROWS" ]; then

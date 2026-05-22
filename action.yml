@@ -1,0 +1,38 @@
+name: 'RiskwareSupplyChain Scan'
+description: 'Scan your open-source dependencies for CVEs, public exploits, and supply chain compromises using RiskwareSupplyChain.'
+author: 'grepStrength Security'
+
+branding:
+  icon: 'shield'
+  color: 'purple'
+
+inputs:
+  api-key:
+    description: 'Your RiskwareSupplyChain API key (starts with rsk_). Store this as a GitHub secret.'
+    required: true
+  fail-on:
+    description: 'Fail the workflow if vulnerabilities at this severity or above are found. Options: critical, high, medium, low, none. Default: none (never fail).'
+    required: false
+    default: 'none'
+  comment:
+    description: 'Post scan results as a PR comment. Default: true.'
+    required: false
+    default: 'true'
+  api-url:
+    description: 'RiskwareSupplyChain API base URL. Override for self-hosted or staging.'
+    required: false
+    default: 'https://riskware-supply-chain-production.up.railway.app'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Scan dependencies
+      shell: bash
+      env:
+        RSC_API_KEY: ${{ inputs.api-key }}
+        RSC_FAIL_ON: ${{ inputs.fail-on }}
+        RSC_COMMENT: ${{ inputs.comment }}
+        RSC_API_URL: ${{ inputs.api-url }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        "${GITHUB_ACTION_PATH}/scan.sh"

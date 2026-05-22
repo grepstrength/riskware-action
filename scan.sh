@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ═══════════════════════════════════════════════════
-# RiskwareSupplyChain GitHub Action — Dependency Scanner
+# RiskwareSupplyChain GitHub Action — Dependency  Scanner
 # ═══════════════════════════════════════════════════
 
 API_URL="${RSC_API_URL:-https://riskware-supply-chain-production.up.railway.app}"
